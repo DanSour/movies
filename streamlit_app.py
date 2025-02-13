@@ -20,6 +20,7 @@ st.set_page_config(page_title="Список фильмов",
 @st.cache_data
 def load_data():
     df = pd.read_csv("data/movies.csv", sep='\t')
+    # st.write(df.iloc[0])
 
     return df
 
@@ -30,10 +31,42 @@ st.write(":violet-background[это все произведения которы
 
 df = load_data()
 
-disabled=False
-st.text_input("New-mov", label_visibility='collapsed', placeholder='Добавить новый', key='new_mov', disabled=disabled)
-if st.session_state.new_mov:
-    st.error('Подожди, еще не сделана функция', icon="🚨")
+if "disabled" not in st.session_state:
+    st.session_state.disabled = False
+    st.session_state.new_mov = ""
+
+def on_change():
+    st.session_state.disabled = True
+    st.session_state.new_mov = ""
+
+def enable_input():
+    st.session_state.disabled = False
+
+text_input = st.text_input(
+    "Введите текст",
+    label_visibility='collapsed',
+    placeholder='Предложить еще',
+    key="new_mov",
+    on_change=on_change,
+    disabled=st.session_state.disabled
+)
+# включает кнопку для повторного открытия доступа к полю ввода
+if st.session_state.disabled:
+    st.button("Разблокировать поле ввода", on_click=enable_input, disabled=not st.session_state.disabled)
+
+# st.text_input("New-mov", label_visibility='collapsed', placeholder='Добавить новый', key='new_mov')
+if text_input:
+    # st.info('Спасибо за предложение!!!')
+    st.success('Спасибо за предложение!!!', icon="✅")
+    # add_film(st.session_state.new_mov)
+    # updated_df = add_film(st.session_state.new_mov, df)
+    # if updated_df is not None:
+    #     df = updated_df
+        # # Очистка текстового поля после добавления фильма
+        # st.session_state.new_mov = ' '
+        # Флажок для перезагрузки данных
+        # st.experimental_rerun()
+
 
 col1, col2 = st.columns(2)
 selected_types = create_checkboxes(col1, col2)
@@ -109,3 +142,4 @@ if st.button("Где посмотреть"):
         time.sleep(sleep)
 
 # streamlit run streamlit_app.py --server.enableCORS false --server.enableXsrfProtection false
+

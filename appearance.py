@@ -23,8 +23,8 @@ def create_checkboxes(col1, col2):
     # Словарь для сопоставления ключей чекбоксов с названиями типов контента
     checkboxes = {
         MOVIE: col1.checkbox("Фильм :green[Фильм] :violet[Фильм] ", key='movie'),
-        CARTOON: col1.checkbox(":rainbow[Мульт]", key='cartoon'),
-        ANIME: col1.checkbox(":rainbow-background[Аниме] :cherry_blossom: ", value=True, key='anime'),
+        CARTOON: col1.checkbox(":rainbow[Мульт]", value=True, key='cartoon'),
+        ANIME: col1.checkbox(":rainbow-background[Аниме] :cherry_blossom: ", key='anime'),
         SERIES: col2.checkbox(":orange-background[Сериал] 🎬", key='series'),
         CARTOON_SERIES: col2.checkbox(":blue[Мульт]-:orange[сериал]", key='cartoon_series'),
         ANIME_SERIES: col2.checkbox(":red[Аниме]-:violet-background[сериал] ㊙️", key='anime_series')

@@ -5,6 +5,23 @@ import streamlit as st
 
 logger.add('logs/data_processing/debug.log', rotation='100 MB', compression='zip', level='DEBUG')
 
+
+def data_load():
+    '''
+    import streamlit as st
+    from st_supabase_connection import SupabaseConnection
+
+    # Initialize connection.
+    conn = st.connection("supabase", type=SupabaseConnection)
+
+    # Perform query.
+    rows = conn.query("*", table="mytable", ttl="10m").execute()
+
+    # Print results.
+    for row in rows.data:
+    st.write(f"{row['name']} has a :{row['pet']}:")
+    '''
+    return
 def get_movie_type(movie_vars):
     """
     Определяет тип произведения (фильм, сериал, аниме и т.д.) на основе жанров и типа.
