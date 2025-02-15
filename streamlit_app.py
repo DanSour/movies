@@ -3,6 +3,9 @@ import pandas as pd
 from search_keywords import *
 from data_processing import *
 from appearance import *
+from st_supabase_connection import SupabaseConnection
+
+
 logger.add('logs/data_processing/debug.log', rotation='100 MB', compression='zip', level='DEBUG')
 
 st.cache_data.clear()
@@ -42,6 +45,7 @@ def main():
     def on_change():
         st.session_state.disabled = True
         st.session_state.placeholder = st.session_state.new_mov
+        # Функция добавления нового фильма в удаленную таблицу
         # add_film(st.session_state.new_mov)
         # updated_df = add_film(st.session_state.new_mov, df)
 
