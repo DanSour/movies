@@ -81,7 +81,7 @@ def data_preparation(mov_vars)  ->  dict:
         return mov_vars
     
     except Exception as e:
-        logger.error(f'Произошла ошибка data_preparation: {e}')
+        logger.error(f'Произошла ошибка data_preparation: {e}, mov_vars')
 
 
 def film_dict(film_name) -> dict:
@@ -135,12 +135,12 @@ def add_film(new_mov):
         mov_vars = film_dict(new_mov.lower())
         
         if mov_vars == None:
-            execute_query(st_supabase_client.table("offered_movies").insert({'name':new_mov.lower(), 'img':'img', 'year':'0'}), ttl=0)
+            execute_query(st_supabase_client.table("offered_movies").insert({'name':new_mov.lower(), 'img':'img', 'year':'1'}), ttl=0)
             logger.info(f'Фильм не найден add_film: {new_mov}')
             return
         
         mov_data = data_preparation(mov_vars)
-        execute_query(st_supabase_client.table("offered_movies").insert(mov_data), ttl=0)
+        execute_query(st_supabase_client.table("offered_movies").insert(mov_data), ttl=1)
 
 
     except Exception as e:
@@ -148,7 +148,7 @@ def add_film(new_mov):
         
         # Проверяем наличие кода ошибки 23505 или ключевых слов
         if "23505" in error_msg or "duplicate key" in error_msg:
-            logger.warning(f"Попытка добавить дубликат: {e}")
+            logger.warning(f"Попытка добавить дубликат: {e} {new_mov}")
         else:
             st.error(f'This is an error: {e}', icon="🚨")
             logger.error(f"Ошибка add_film: {e}")
