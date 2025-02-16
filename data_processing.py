@@ -58,7 +58,7 @@ def get_movie_type(movie_vars):
         return 'Неизвестный тип'
 
 
-def data_preparation(mov_vars)  ->  dict: 
+def data_preparation(mov_vars): 
     """
     Обрабатывает входящий json файл и превращает в pd.DataFrame 
 
@@ -66,8 +66,11 @@ def data_preparation(mov_vars)  ->  dict:
     :return dict: Нужная информация о произведении .
     """
     try:
+
         keys_to_keep = ["nameRu", "posterUrl", "year", "genres", "rating", "filmLength", "type"]
+
         mov_vars = {k: v for k, v in mov_vars.items() if k in keys_to_keep} 
+        logger.debug(mov_vars)
 
         mov_vars['genres'] = ', '.join([item['genre'] for item in mov_vars['genres']])
         # mov_vars['posterUrl'] = f'<img src={mov_vars["posterUrl"]} alt="img" width="100" />'
@@ -82,6 +85,7 @@ def data_preparation(mov_vars)  ->  dict:
     
     except Exception as e:
         logger.error(f'Произошла ошибка data_preparation: {e}, mov_vars')
+        return None
 
 
 def film_dict(film_name) -> dict:
@@ -140,7 +144,11 @@ def add_film(new_mov):
             return
         
         mov_data = data_preparation(mov_vars)
-        execute_query(st_supabase_client.table("offered_movies").insert(mov_data), ttl=1)
+        if mov_data == None:
+            execute_query(st_supabase_client.table("offered_movies").insert({'name':new_mov.lower(), 'img':'img', 'year':'1'}), ttl=0)
+            logger.error(f'Ошибка при обработке данных: {new_mov}')
+        else:
+            execute_query(st_supabase_client.table("offered_movies").insert(mov_data), ttl=1)
 
 
     except Exception as e:
