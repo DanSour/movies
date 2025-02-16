@@ -3,12 +3,11 @@ import pandas as pd
 from search_keywords import *
 from data_processing import *
 from appearance import *
-from st_supabase_connection import SupabaseConnection
 
 
 logger.add('logs/data_processing/debug.log', rotation='100 MB', compression='zip', level='DEBUG')
 
-st.cache_data.clear()
+# st.cache_data.clear()
 # Show the page title and description.
 st.set_page_config(page_title="Список фильмов", 
                    page_icon="🎬", 
@@ -18,15 +17,6 @@ st.set_page_config(page_title="Список фильмов",
 Чел который это сделал - [DanSour](http://github.com/DanSour)"
                    }
                 )
-
-# Load the data from a CSV. We're caching this so it doesn't reload every time the app
-# reruns (e.g. if the user interacts with the widgets).
-@st.cache_data
-def load_data():
-    df = pd.read_csv("data/movies.csv", sep='\t')
-    # 
-
-    return df
 
 def main():
     st.title("🎥 Смотреть онлайн бесплатно")
@@ -38,16 +28,17 @@ def main():
 
     if "disabled" not in st.session_state:
         st.session_state.disabled = False
-        # st.session_state.new_mov = ""
     if 'placeholder' not in st.session_state:
         st.session_state.placeholder = 'Предложить'
 
     def on_change():
         st.session_state.disabled = True
         st.session_state.placeholder = st.session_state.new_mov
-        # Функция добавления нового фильма в удаленную таблицу
-        # add_film(st.session_state.new_mov)
-        # updated_df = add_film(st.session_state.new_mov, df)
+        # Функция добавления нового фильма в базу данных
+        if st.session_state.new_mov not in ['хуй', 'пенис', 'пизда']:
+            add_film(st.session_state.new_mov)
+        else:
+            pass
 
     def enable_input():
         st.session_state.disabled = False
@@ -63,7 +54,7 @@ def main():
     )
     # включает кнопку для повторного открытия доступа к полю ввода
     if st.session_state.disabled:
-        if st.session_state.placeholder.lower() in ['хуй', 'пенис']:
+        if st.session_state.placeholder.lower() in ['хуй', 'пенис', 'пизда']:
             st.error(f'Себе {st.session_state.placeholder} порекомендуй, клоун 👊😡', icon="🤡")
         else:
             # st.info('Спасибо за предложение!!!')
@@ -84,7 +75,8 @@ def main():
 
     # Показать данные на экране через st.dataframe
     st.dataframe(
-        df_filtered,
+        df_filtered, 
+        use_container_width=True,
         # форматирование датафрейма
         column_config={
             "name": st.column_config.TextColumn(
@@ -108,7 +100,7 @@ def main():
                 help='Рейт на Кинопоиску',
             ),
             "length": st.column_config.TimeColumn(
-                "Длина",
+                "Длительность",
                 format='HH:mm',
             ),
                 # width ='small',
