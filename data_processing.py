@@ -4,12 +4,12 @@ import streamlit as st
 from loguru import logger
 from st_supabase_connection import SupabaseConnection, execute_query
 
-logger.add(
-    "logs/data_processing/debug.log",
-    rotation="100 MB",
-    compression="zip",
-    level="DEBUG",
-)
+# logger.add(
+#     "logs/data_processing/debug.log",
+#     rotation="100 MB",
+#     compression="zip",
+#     level="DEBUG",
+# )
 
 
 # Load the data from a SupabaseConnection. We're caching this so
@@ -71,11 +71,7 @@ def get_movie_type(movie_vars):
         movie_type = movie_vars.get("type", "")
 
         # Маппинг типов по умолчанию
-        type_mapping = {
-            "FILM": "Фильм", 
-            "TV_SERIES": "Сериал", 
-            "MINI_SERIES": "Сериал"
-            }
+        type_mapping = {"FILM": "Фильм", "TV_SERIES": "Сериал", "MINI_SERIES": "Сериал"}
 
         # Проверка специальных случаев
         if "аниме" in genres:
@@ -134,10 +130,10 @@ def data_preparation(mov_vars):
 
     except Exception as e:
         logger.error(f"Произошла ошибка data_preparation: {e}, mov_vars")
-        return mov_vars
+        return None
 
 
-def film_dict(film_name) -> dict:
+def search_film(film_name) -> dict:
     """Ищет информацию о произведении по API кинопоиска
 
     Args:
@@ -161,14 +157,15 @@ def film_dict(film_name) -> dict:
         # Проверяем, успешен ли запрос
         if response.status_code == 200:
             film_data = response.json()  # Преобразуем ответ в JSON
-            return film_data["films"][0] if film_data["films"] else None
+            films = film_data.get("films", [])
+            return films[0] if films else None
         else:
-            logger.error(f"Ошибка film_dict: {response.status_code} - {response.text}")
+            logger.error(f"response err: {response.status_code} - {response.text}")
             return None
     except Exception as e:
         # print(f'Произошла ошибка: {e}')
-        st.error("Film_dict error", icon="🚨")
-        logger.error(f"Ошибка film_dict: {e}")
+        st.error("search_film error", icon="🚨")
+        logger.error(f"Ошибка search_film: {e}")
 
 
 # Сохранение данных обратно в CSV файл
@@ -184,42 +181,30 @@ def add_film(new_mov):
             type=SupabaseConnection,
             ttl=10,
         )
+        mov_vars = search_film(new_mov.lower())
 
-        mov_vars = film_dict(new_mov.lower())
+        if mov_vars is not None:
+            mov_data = data_preparation(mov_vars)
+            logger.success(f"Данные преобразованы: {new_mov}")
 
-        if mov_vars is None:
-            execute_query(
-                st_supabase_client.table("offered_movies").insert(
-                    # {"name": new_mov.lower(), "img": None, "year": None}
-                    {"name": new_mov.lower(), "posterUrl": "-"}
-                ),
-                ttl=0,
-            )
-            logger.warning(f"mov_vars is None, add_film: {new_mov}")
-            return
+            if mov_data is not None:
+                execute_query(
+                    st_supabase_client.table("offered_movies").insert(mov_data),
+                )
+                logger.success(f"Успешно добавлен: {new_mov}")
 
-        mov_data = data_preparation(mov_vars)
-        # logger.debug(mov_data)
-        if mov_data is None:
-            execute_query(
-                st_supabase_client.table("offered_movies").insert(
-                    {
-                        "name": new_mov.lower(),
-                        "img": "img",
-                    }
-                ),
-            )
-            logger.error(f"Ошибка при обработке данных: {new_mov}")
-        else:
-            execute_query(
-                st_supabase_client.table("offered_movies").insert(mov_data),
-                # ttl=1
-            )
+                return
+
+        execute_query(
+            st_supabase_client.table("offered_movies").insert(
+                {"name": new_mov.lower(), "posterUrl": "-"}
+            ),
+        )
+        logger.success(f"Добавлено только название {new_mov}")
 
     except Exception as e:
-        error_msg = str(
-            e
-        ).lower()  # Приводим сообщение к нижнему регистру для универсальности
+        # Приводим сообщение к нижнему регистру для универсальности
+        error_msg = str(e).lower()
 
         # Проверяем наличие кода ошибки 23505 или ключевых слов
         if "23505" in error_msg or "duplicate key" in error_msg:

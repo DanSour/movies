@@ -160,4 +160,5 @@ if __name__ == "__main__":
         # Ловим все остальные исключения для предотвращения сбоя приложения
         logger.error(f"Неожиданная ошибка в main: {e}")
 
-# streamlit run streamlit_app.py --server.enableCORS false --server.enableXsrfProtection false
+# streamlit run streamlit_app.py
+# --server.enableCORS false --server.enableXsrfProtection false
