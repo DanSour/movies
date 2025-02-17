@@ -67,25 +67,27 @@ def data_preparation(mov_vars):
     """
     try:
 
-        keys_to_keep = ["nameRu", "posterUrl", "year", "genres", "rating", "filmLength", "type"]
+        keys_to_keep = ['filmId',  'nameRu', 'posterUrl', 'year', 'genres', 'rating', 'filmLength', 'type']
 
-        mov_vars = {k: v for k, v in mov_vars.items() if k in keys_to_keep} 
-        logger.debug(mov_vars)
+        mov_vars = {k: v for k, v in mov_vars.items() if k in keys_to_keep}
+        # mov_vars = {k: mov_vars.get(k, None) for k in keys_to_keep} 
 
-        mov_vars['genres'] = ', '.join([item['genre'] for item in mov_vars['genres']])
-        # mov_vars['posterUrl'] = f'<img src={mov_vars["posterUrl"]} alt="img" width="100" />'
-        
-        mov_vars['type'] = get_movie_type(mov_vars)
 
-        mov_vars['length'] = mov_vars.pop('filmLength')
         mov_vars['name'] = mov_vars.pop('nameRu')
         mov_vars['img'] = mov_vars.pop('posterUrl')
+
+        mov_vars['genres'] = ', '.join([item['genre'] for item in mov_vars['genres']])
+        
+        mov_vars['length'] = mov_vars.pop('filmLength')
+        mov_vars['type'] = get_movie_type(mov_vars)
+        # mov_vars['length'] = f'{mov_vars.pop('filmLength')}'
+
         
         return mov_vars
     
     except Exception as e:
         logger.error(f'Произошла ошибка data_preparation: {e}, mov_vars')
-        return None
+        return mov_vars
 
 
 def film_dict(film_name) -> dict:
@@ -108,7 +110,9 @@ def film_dict(film_name) -> dict:
 
         # Проверяем, успешен ли запрос
         if response.status_code == 200:
+            logger.debug(response)
             film_data = response.json()  # Преобразуем ответ в JSON
+            logger.debug(film_data)
             return film_data['films'][0] if film_data['films'] else None
 
         else:
@@ -139,13 +143,15 @@ def add_film(new_mov):
         mov_vars = film_dict(new_mov.lower())
         
         if mov_vars == None:
-            execute_query(st_supabase_client.table("offered_movies").insert({'name':new_mov.lower(), 'img':'img', 'year':'1'}), ttl=0)
+            execute_query(st_supabase_client.table("offered_movies").insert({'name':new_mov.lower(), 'img':'img', 'year':'111'}), ttl=0)
             logger.info(f'Фильм не найден add_film: {new_mov}')
             return
         
+        # logger.debug(mov_vars)
         mov_data = data_preparation(mov_vars)
+        # logger.debug(mov_data)
         if mov_data == None:
-            execute_query(st_supabase_client.table("offered_movies").insert({'name':new_mov.lower(), 'img':'img', 'year':'1'}), ttl=0)
+            execute_query(st_supabase_client.table("offered_movies").insert({'name':new_mov.lower(), 'img':'img', 'year':'111'}), ttl=0)
             logger.error(f'Ошибка при обработке данных: {new_mov}')
         else:
             execute_query(st_supabase_client.table("offered_movies").insert(mov_data), ttl=1)
