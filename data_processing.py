@@ -174,12 +174,13 @@ def add_film(new_mov):
             type=SupabaseConnection,
             ttl=10,
         )
-        mov_vars = search_film(new_mov.lower())
+        new_mov = new_mov.lower()
+        mov_vars = search_film(new_mov)
 
         if mov_vars is not None:
             mov_data = data_preparation(mov_vars)
             logger.success(
-                f"Данные преобразованы: {new_mov.lower()} -> {mov_data['name']}"
+                f"Данные преобразованы: {new_mov} -> {mov_data['name']}"
             )
 
             if mov_data is not None:
@@ -193,11 +194,11 @@ def add_film(new_mov):
 
         execute_query(
             st_supabase_client.table("offered_movies").insert(
-                {"name": new_mov.lower(), "posterUrl": "-"}
+                {"name": new_mov, "posterUrl": "-"}
             ),
             ttl=0,
         )
-        logger.success(f"Добавлено только название {new_mov.lower()}")
+        logger.success(f"Добавлено только название {new_mov}")
 
     except Exception as e:
         # Приводим сообщение к нижнему регистру для универсальности
@@ -205,7 +206,7 @@ def add_film(new_mov):
 
         # Проверяем наличие кода ошибки 23505 или ключевых слов
         if "23505" in error_msg or "duplicate key" in error_msg:
-            logger.warning(f"Попытка добавить дубликат: {e} {new_mov}")
+            logger.warning(f"Попытка добавить дубликат: {new_mov}")
         else:
             st.error(f"This is an error: {e}", icon="🚨")
             logger.error(f"Ошибка add_film: {e}")
