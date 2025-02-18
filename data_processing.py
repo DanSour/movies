@@ -4,13 +4,6 @@ import streamlit as st
 from loguru import logger
 from st_supabase_connection import SupabaseConnection, execute_query
 
-# logger.add(
-#     "logs/data_processing/debug.log",
-#     rotation="100 MB",
-#     compression="zip",
-#     level="DEBUG",
-# )
-
 
 # Load the data from a SupabaseConnection. We're caching this so
 # it doesn't reload every time the app
@@ -152,7 +145,7 @@ def search_film(film_name) -> dict:
     params = {"keyword": film_name}  # Ключевое слово для поиска
 
     try:
-        response = requests.get(url, headers=headers, params=params, timeout=100)
+        response = requests.get(url, headers=headers, params=params, timeout=4)
 
         # Проверяем, успешен ли запрос
         if response.status_code == 200:
@@ -185,13 +178,16 @@ def add_film(new_mov):
 
         if mov_vars is not None:
             mov_data = data_preparation(mov_vars)
-            logger.success(f"Данные преобразованы: {new_mov}")
+            logger.success(
+                f"Данные преобразованы: {new_mov.lower()} -> {mov_data['name']}"
+            )
 
             if mov_data is not None:
                 execute_query(
                     st_supabase_client.table("offered_movies").insert(mov_data),
+                    ttl=0
                 )
-                logger.success(f"Успешно добавлен: {new_mov}")
+                logger.success(f"Успешно добавлен: {mov_data['name']}")
 
                 return
 
@@ -199,8 +195,9 @@ def add_film(new_mov):
             st_supabase_client.table("offered_movies").insert(
                 {"name": new_mov.lower(), "posterUrl": "-"}
             ),
+            ttl=0,
         )
-        logger.success(f"Добавлено только название {new_mov}")
+        logger.success(f"Добавлено только название {new_mov.lower()}")
 
     except Exception as e:
         # Приводим сообщение к нижнему регистру для универсальности
