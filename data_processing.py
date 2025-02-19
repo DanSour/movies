@@ -18,7 +18,7 @@ def load_data():
     st_supabase_client = st.connection(
         name="SupabaseConnection",
         type=SupabaseConnection,
-        ttl=10,
+        ttl=20,
     )
     request = execute_query(st_supabase_client.table("movies").select("*"), ttl=0)
 
