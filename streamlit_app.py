@@ -44,7 +44,7 @@ def main():
         st.session_state.disabled = True
         st.session_state.placeholder = st.session_state.new_mov
         # Функция добавления нового фильма в базу данных
-        if st.session_state.new_mov not in ["хуй", "пенис", "пизда"]:
+        if st.session_state.new_mov.lower() not in ["хуй", "пенис", "пизда"]:
             add_film(st.session_state.new_mov)
         else:
             pass
@@ -69,7 +69,6 @@ def main():
                 icon="🤡",
             )
         else:
-            # st.info('Спасибо за предложение!!!')
             st.success("Спасибо за предложение!!", icon="✅")
             st.button(
                 "Предложить еще",
@@ -85,6 +84,28 @@ def main():
 
     # Фильтрация DataFrame
     df_filtered = filter_dataframe(df, selected_types, years)
+
+    # Объединяем все списки жанров в один,
+    # преобразуем объединенный список в множество для получения уникальных жанров
+    # и удаляем заданные жанры из множества уникальных жанров
+    unique_genres = {
+        genre for sublist in df_filtered["genres"] for genre in sublist.split(", ")
+    } - {"аниме", "мультфильм"}
+
+    # Теперь можно использовать unique_genres в multiselect
+    genres = st.multiselect(
+        "genres",
+        sorted(unique_genres),
+        placeholder="Жанры",
+        label_visibility="collapsed",
+    )
+
+    if genres:
+        df_filtered = df_filtered[
+            df_filtered["genres"].apply(
+                lambda x: all(genre in x.split(", ") for genre in genres)
+            )
+        ]
 
     st.write("Посмотреть постер - :red[дважды] на него нажмай")
 
