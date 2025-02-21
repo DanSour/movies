@@ -1,5 +1,5 @@
-from gotrue.errors import AuthApiError
 import streamlit as st
+from gotrue.errors import AuthApiError
 
 from appearance import create_checkboxes, links_to_watch
 from data_processing import (
@@ -52,8 +52,6 @@ def main():
         st.session_state.disabled = True
         st.session_state.placeholder = st.session_state.new_mov
         # Функция добавления нового фильма в базу данных
-        if admin:
-            return add_film(st.session_state.new_mov, admin)
         if st.session_state.new_mov.lower() not in ["хуй", "пенис", "пизда"]:
             add_film(st.session_state.new_mov, admin)
         else:
@@ -178,27 +176,21 @@ def main():
     # Проверка, является ли пользователь владельцем
     with st.sidebar:
 
-        def admin_add_film(mov=None, admin=None):
-            st_supabase_client = init_supabase_client()
-            # a = st_supabase_client.auth.sign_in_with_password(
-            #     dict(email=username, password=password)
-            # )
-            # film = add_film(st.session_state.mov, st.session_state.admin)
-            film = add_film(st.session_state.mov, response)
-            execute_query(
-                st_supabase_client.table("qwer").insert(film),
-                ttl=0,
-            )
+        def admin_add_film(response=None):
+            mov = st.session_state.mov
+            response = st.session_state.response
+            add_film(mov, response)
 
         st_supabase_client = init_supabase_client()
-        from st_supabase_connection import execute_query
 
         if "admin" not in st.session_state:
             st.session_state.admin = False
 
         with st.form("my_form"):
             username = st.text_input(
-                "Username", label_visibility="collapsed", placeholder="admin_login"
+                "Username",
+                label_visibility="collapsed",
+                placeholder="admin_login",
             )
             password = st.text_input(
                 "pswd",
@@ -208,11 +200,11 @@ def main():
             )
 
             if st.form_submit_button("Submit"):
-                response = st_supabase_client.auth.sign_in_with_password(
+                st.session_state.response = st_supabase_client.auth.sign_in_with_password(
                     dict(email=username, password=password)
                 )
 
-                if response:
+                if st.session_state.response:
                     st.session_state.admin = True
                     st.success("Доступ владельца подтвержден!")
                 else:

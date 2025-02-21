@@ -177,8 +177,8 @@ def add_film(new_mov, admin=False):
     """
     try:
         st_supabase_client = init_supabase_client()
+        db_table = "movies" if admin else "offered_movies"
 
-        db_table = "offered_movies"
         new_mov = new_mov.lower()
         mov_vars = search_film(new_mov)
 
@@ -188,10 +188,7 @@ def add_film(new_mov, admin=False):
 
             if mov_data is not None:
                 if admin:
-                    admin
-                    db_table = "qwer"
                     del mov_data["url"]  # Убираем колонку url
-                    # return mov_data
 
                 execute_query(
                     st_supabase_client.table(f"{db_table}").insert(mov_data), ttl=0
