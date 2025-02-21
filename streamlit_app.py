@@ -172,7 +172,7 @@ def main():
 
         def admin_add_film():
             add_film(
-                st.session_state.mov, admin=True, st_supabase_client=auth["client"]
+                st_supabase_client=st.session_state.auth["client"]
             )
 
         if "admin" not in st.session_state:
@@ -192,8 +192,8 @@ def main():
             )
 
             if st.form_submit_button("Submit"):
-                auth = authenticate(username, password)
-                if auth["response"]:
+                st.session_state.auth = authenticate(username, password)
+                if st.session_state.auth["response"]:
                     st.session_state.admin = True
                     st.success("Доступ владельца подтвержден!")
                 else:
