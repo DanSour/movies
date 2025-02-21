@@ -32,6 +32,23 @@ def load_data():
     return pd.DataFrame(request.data)
 
 
+def authenticate(username: str, password: str) -> dict:
+    """Аутентификация пользователя
+
+    Args:
+        username (str): Почта которая зарегистрирована для изменения бд
+        password (str): Зарегистрированный пароль
+
+    Returns:
+        dict: Словарь с данными об успешном подключении и клиентом supabase_client
+    """
+    client = init_supabase_client()
+    response = client.auth.sign_in_with_password(
+        {"email": username, "password": password}
+    )
+    return {"response": bool(response), "client": client}
+
+
 def filter_dataframe(df, selected_types, years):
     """Фильтрует DataFrame по выбранным типам контента и диапазону лет.
 
@@ -169,14 +186,15 @@ def search_film(film_name) -> dict:
 
 
 # Сохранение данных обратно в CSV файл
-def add_film(new_mov, admin=False):
+def add_film(new_mov, admin=False, st_supabase_client=None):
     """Ищет информацию о произведении и добавляет в бд
 
     Args:
         new_mov (str): название произведения.
     """
     try:
-        st_supabase_client = init_supabase_client()
+        if st_supabase_client is None:
+            st_supabase_client = init_supabase_client()
         db_table = "movies" if admin else "offered_movies"
 
         new_mov = new_mov.lower()

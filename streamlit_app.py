@@ -2,13 +2,7 @@ import streamlit as st
 from gotrue.errors import AuthApiError
 
 from appearance import create_checkboxes, links_to_watch
-from data_processing import (
-    add_film,
-    filter_dataframe,
-    init_supabase_client,
-    load_data,
-    logger,
-)
+from data_processing import add_film, authenticate, filter_dataframe, load_data, logger
 
 logger.add(
     "logs/data_processing/debug.log",
@@ -176,12 +170,10 @@ def main():
     # Проверка, является ли пользователь владельцем
     with st.sidebar:
 
-        def admin_add_film(response=None):
-            mov = st.session_state.mov
-            response = st.session_state.response
-            add_film(mov, response)
-
-        st_supabase_client = init_supabase_client()
+        def admin_add_film():
+            add_film(
+                st.session_state.mov, admin=True, st_supabase_client=auth["client"]
+            )
 
         if "admin" not in st.session_state:
             st.session_state.admin = False
@@ -200,11 +192,8 @@ def main():
             )
 
             if st.form_submit_button("Submit"):
-                st.session_state.response = st_supabase_client.auth.sign_in_with_password(
-                    dict(email=username, password=password)
-                )
-
-                if st.session_state.response:
+                auth = authenticate(username, password)
+                if auth["response"]:
                     st.session_state.admin = True
                     st.success("Доступ владельца подтвержден!")
                 else:
