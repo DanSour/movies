@@ -5,6 +5,16 @@ from loguru import logger
 from st_supabase_connection import SupabaseConnection, execute_query
 
 
+def init_supabase_client():
+    if "st_supabase_client" not in st.session_state:
+        st.session_state.st_supabase_client = st.connection(
+            name="SupabaseConnection",
+            type=SupabaseConnection,
+            ttl=20,
+        )
+    return st.session_state.st_supabase_client
+
+
 # Load the data from a SupabaseConnection. We're caching this so
 # it doesn't reload every time the app
 # reruns (e.g. if the user interacts with the widgets).
@@ -15,11 +25,8 @@ def load_data():
     Returns:
         pd.DataFrame: таблица фильмов из БД
     """
-    st_supabase_client = st.connection(
-        name="SupabaseConnection",
-        type=SupabaseConnection,
-        ttl=20,
-    )
+
+    st_supabase_client = init_supabase_client()
     request = execute_query(st_supabase_client.table("movies").select("*"), ttl=0)
 
     return pd.DataFrame(request.data)
@@ -162,38 +169,38 @@ def search_film(film_name) -> dict:
 
 
 # Сохранение данных обратно в CSV файл
-def add_film(new_mov):
+def add_film(new_mov, admin=False):
     """Ищет информацию о произведении и добавляет в бд
 
     Args:
         new_mov (str): название произведения.
     """
     try:
-        st_supabase_client = st.connection(
-            name="SupabaseConnection",
-            type=SupabaseConnection,
-            ttl=10,
-        )
+        st_supabase_client = init_supabase_client()
+
+        db_table = "offered_movies"
         new_mov = new_mov.lower()
         mov_vars = search_film(new_mov)
 
         if mov_vars is not None:
             mov_data = data_preparation(mov_vars)
-            logger.success(
-                f"Данные преобразованы: {new_mov} -> {mov_data['name']}"
-            )
+            logger.success(f"Данные преобразованы: {new_mov} -> {mov_data['name']}")
 
             if mov_data is not None:
+                if admin:
+                    admin
+                    db_table = "qwer"
+                    del mov_data["url"]  # Убираем колонку url
+                    # return mov_data
+
                 execute_query(
-                    st_supabase_client.table("offered_movies").insert(mov_data),
-                    ttl=0
+                    st_supabase_client.table(f"{db_table}").insert(mov_data), ttl=0
                 )
                 logger.success(f"Успешно добавлен: {mov_data['name']}")
-
                 return
 
         execute_query(
-            st_supabase_client.table("offered_movies").insert(
+            st_supabase_client.table(f"{db_table}").insert(
                 {"name": new_mov, "posterUrl": "-"}
             ),
             ttl=0,

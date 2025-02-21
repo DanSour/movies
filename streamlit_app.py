@@ -1,7 +1,14 @@
+from gotrue.errors import AuthApiError
 import streamlit as st
 
 from appearance import create_checkboxes, links_to_watch
-from data_processing import logger, load_data, filter_dataframe, add_film
+from data_processing import (
+    add_film,
+    filter_dataframe,
+    init_supabase_client,
+    load_data,
+    logger,
+)
 
 logger.add(
     "logs/data_processing/debug.log",
@@ -14,6 +21,7 @@ logger.add(
 # Show the page title and description.
 st.set_page_config(
     page_title="Список фильмов",
+    initial_sidebar_state="collapsed",
     page_icon="🎬",
     menu_items={
         "About": "# This is an *extremely* cool app! \n\
@@ -40,12 +48,14 @@ def main():
     if "placeholder" not in st.session_state:
         st.session_state.placeholder = "Предложить"
 
-    def on_change():
+    def on_change(admin=False):
         st.session_state.disabled = True
         st.session_state.placeholder = st.session_state.new_mov
         # Функция добавления нового фильма в базу данных
+        if admin:
+            return add_film(st.session_state.new_mov, admin)
         if st.session_state.new_mov.lower() not in ["хуй", "пенис", "пизда"]:
-            add_film(st.session_state.new_mov)
+            add_film(st.session_state.new_mov, admin)
         else:
             pass
 
@@ -79,8 +89,7 @@ def main():
     col1, col2 = st.columns(2)
     selected_types = create_checkboxes(col1, col2)
     # Добавляем слайдер для выбора года
-    years = st.slider("Годы", min_value=1950,
-                      max_value=2030, value=(1954, 2010))
+    years = st.slider("Годы", min_value=1950, max_value=2030, value=(1954, 2010))
 
     # Фильтрация DataFrame
     df_filtered = filter_dataframe(df, selected_types, years)
@@ -119,7 +128,7 @@ def main():
                 "Название",
                 width="medium",
             ),
-            "img": st.column_config.ImageColumn(
+            "posterUrl": st.column_config.ImageColumn(
                 "Постер",
             ),
             "year": st.column_config.NumberColumn(
@@ -166,6 +175,54 @@ def main():
         # Анимация ввода
         st.session_state.displayed_text = links_to_watch(placeholder)
 
+    # Проверка, является ли пользователь владельцем
+    with st.sidebar:
+
+        def admin_add_film(mov=None, admin=None):
+            st_supabase_client = init_supabase_client()
+            # a = st_supabase_client.auth.sign_in_with_password(
+            #     dict(email=username, password=password)
+            # )
+            # film = add_film(st.session_state.mov, st.session_state.admin)
+            film = add_film(st.session_state.mov, response)
+            execute_query(
+                st_supabase_client.table("qwer").insert(film),
+                ttl=0,
+            )
+
+        st_supabase_client = init_supabase_client()
+        from st_supabase_connection import execute_query
+
+        if "admin" not in st.session_state:
+            st.session_state.admin = False
+
+        with st.form("my_form"):
+            username = st.text_input(
+                "Username", label_visibility="collapsed", placeholder="admin_login"
+            )
+            password = st.text_input(
+                "pswd",
+                type="password",
+                label_visibility="collapsed",
+                placeholder="password",
+            )
+
+            if st.form_submit_button("Submit"):
+                response = st_supabase_client.auth.sign_in_with_password(
+                    dict(email=username, password=password)
+                )
+
+                if response:
+                    st.session_state.admin = True
+                    st.success("Доступ владельца подтвержден!")
+                else:
+                    st.error("Неверный ключ")
+        if st.session_state.admin:
+            # Показываем поле ввода текста только владельцу
+            st.text_input(
+                " ", label_visibility="collapsed", key="mov", on_change=admin_add_film
+            )
+
 
 if __name__ == "__main__":
     try:
@@ -177,8 +234,11 @@ if __name__ == "__main__":
     # Можно добавлять конкретные исключения по мере необходимости
     # except SomeSpecificException as se:
     #     logger.error(f"Ошибка SomeSpecificException в main: {se}")
+    except AuthApiError as e:
+        # Обработка ошибки авторизации
+        logger.error(f"Ошибка авторизации: {e}")
+        st.sidebar.error("Неверный email или пароль ❌")
     except Exception as e:
-        # Ловим все остальные исключения для предотвращения сбоя приложения
         logger.error(f"Неожиданная ошибка в main: {e}")
 
 # streamlit run streamlit_app.py
