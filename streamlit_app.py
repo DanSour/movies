@@ -172,7 +172,9 @@ def main():
 
         def admin_add_film():
             add_film(
-                st_supabase_client=st.session_state.auth["client"]
+                st.session_state.mov,
+                admin=True,
+                st_supabase_client=st.session_state.auth["client"],
             )
 
         if "admin" not in st.session_state:
