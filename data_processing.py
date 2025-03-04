@@ -137,11 +137,14 @@ def data_preparation(mov_vars):
         mov_vars = {k: mov_vars.get(k, None) for k in keys_to_keep}
 
         mov_vars["name"] = mov_vars.pop("nameRu")
+        mov_vars["url"] = f"https://www.kinopoisk.ru/film/{mov_vars.pop('filmId')}"
 
         mov_vars["genres"] = ", ".join([item["genre"] for item in mov_vars["genres"]])
 
+        mov_vars["rating"] = (
+            0.0 if mov_vars["rating"] == "null" else float(mov_vars["rating"])
+        )
         mov_vars["type"] = get_movie_type(mov_vars)
-        mov_vars["url"] = f"https://www.kinopoisk.ru/film/{mov_vars.pop('filmId')}"
 
         return mov_vars
 
@@ -186,16 +189,15 @@ def search_film(film_name) -> dict:
 
 
 # Сохранение данных обратно в CSV файл
-def add_film(new_mov, admin=False, st_supabase_client=None):
+def add_film(new_mov, admin=False):
     """Ищет информацию о произведении и добавляет в бд
 
     Args:
         new_mov (str): название произведения.
     """
     try:
-        if st_supabase_client is None:
-            st_supabase_client = init_supabase_client()
-        db_table = "movies" if admin else "offered_movies"
+        st_supabase_client = init_supabase_client()
+        db_table = "offered_movies"
 
         new_mov = new_mov.lower()
         mov_vars = search_film(new_mov)
@@ -212,6 +214,61 @@ def add_film(new_mov, admin=False, st_supabase_client=None):
                     st_supabase_client.table(f"{db_table}").insert(mov_data), ttl=0
                 )
                 logger.success(f"Успешно добавлен: {mov_data['name']}")
+                return
+
+        execute_query(
+            st_supabase_client.table(f"{db_table}").insert(
+                {"name": new_mov, "posterUrl": "-"}
+            ),
+            ttl=0,
+        )
+        logger.success(f"Добавлено только название {new_mov}")
+
+    except Exception as e:
+        # Приводим сообщение к нижнему регистру для универсальности
+        error_msg = str(e).lower()
+
+        # Проверяем наличие кода ошибки 23505 или ключевых слов
+        if "23505" in error_msg or "duplicate key" in error_msg:
+            logger.warning(f"Попытка добавить дубликат: {new_mov}")
+        else:
+            st.error(f"This is an error: {e}", icon="🚨")
+            logger.error(f"Ошибка add_film: {e}")
+
+
+def admin_access(movie, st_supabase_client, key_word):
+    """Ищет информацию о произведении и добавляет в бд
+
+    Args:
+        new_mov (str): название произведения.
+    """
+    db_table = "movies"
+    try:
+        new_mov = movie.lower()
+        mov_vars = search_film(new_mov)
+
+        if mov_vars is not None:
+            mov_data = data_preparation(mov_vars)
+
+            if mov_data is not None:
+                del mov_data["url"]  # Убираем колонку url
+
+                # Выполняем операцию в зависимости от ключевого слова
+                if key_word == "insert":
+                    execute_query(
+                        st_supabase_client.table(f"{db_table}").insert(mov_data), ttl=0
+                    )
+                elif key_word == "delete":
+                    execute_query(
+                        st_supabase_client.table(f"{db_table}")
+                        .delete()
+                        .eq("name", mov_data["name"]),
+                        ttl=0,
+                    )
+                else:
+                    raise ValueError(f"Неподдерживаемая операция: {key_word}")
+
+                logger.success(f"Successfully {key_word}ed: {mov_data['name']}")
                 return
 
         execute_query(

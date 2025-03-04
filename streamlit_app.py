@@ -2,7 +2,14 @@ import streamlit as st
 from gotrue.errors import AuthApiError
 
 from appearance import create_checkboxes, links_to_watch
-from data_processing import add_film, authenticate, filter_dataframe, load_data, logger
+from data_processing import (
+    add_film,
+    admin_access,
+    authenticate,
+    filter_dataframe,
+    load_data,
+    logger,
+)
 
 logger.add(
     "logs/data_processing/debug.log",
@@ -171,10 +178,10 @@ def main():
     with st.sidebar:
 
         def admin_add_film():
-            add_film(
-                st.session_state.mov,
-                admin=True,
+            admin_access(
+                movie=mov,
                 st_supabase_client=st.session_state.auth["client"],
+                key_word=key_word,
             )
 
         if "admin" not in st.session_state:
@@ -197,13 +204,16 @@ def main():
                 st.session_state.auth = authenticate(username, password)
                 if st.session_state.auth["response"]:
                     st.session_state.admin = True
-                    st.success("Доступ владельца подтвержден!")
                 else:
                     st.error("Неверный ключ")
         if st.session_state.admin:
+
+            key_word = st.segmented_control(
+                "Func", ["insert", "delete"], selection_mode="single", default="insert"
+            )
             # Показываем поле ввода текста только владельцу
-            st.text_input(
-                " ", label_visibility="collapsed", key="mov", on_change=admin_add_film
+            mov = st.text_input(
+                " ", label_visibility="collapsed", on_change=admin_add_film
             )
 
 
