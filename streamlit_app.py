@@ -58,7 +58,7 @@ def main():
         else:
             pass
 
-    def enable_input(): 
+    def enable_input():
         st.session_state.disabled = False
         st.session_state.placeholder = "Предложить"
 
@@ -178,6 +178,9 @@ def main():
     with st.sidebar:
 
         def admin_add_film():
+            if "auth" not in st.session_state:
+                st.session_state.auth = False
+
             admin_access(
                 movie=st.session_state.mov,
                 st_supabase_client=st.session_state.auth["client"],
@@ -204,12 +207,18 @@ def main():
         if st.session_state.auth["response"]:
 
             st.segmented_control(
-                "Func", ["insert", "delete"], selection_mode="single", default="insert",
-                key='key_word'
+                "Func",
+                ["insert", "delete"],
+                selection_mode="single",
+                default="insert",
+                key="key_word",
             )
             # Показываем поле ввода текста только владельцу
             st.text_input(
-                " ", label_visibility="collapsed", key="mov", on_change=admin_add_film,
+                " ",
+                label_visibility="collapsed",
+                key="mov",
+                on_change=admin_add_film,
             )
 
 
