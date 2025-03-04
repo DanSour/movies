@@ -177,10 +177,10 @@ def main():
     # Проверка, является ли пользователь владельцем
     with st.sidebar:
 
-        def admin_add_film():
-            if "auth" not in st.session_state:
-                st.session_state.auth = False
+        if "admin" not in st.session_state:
+            st.session_state.admin = False
 
+        def admin_add_film():
             admin_access(
                 movie=st.session_state.mov,
                 st_supabase_client=st.session_state.auth["client"],
@@ -202,9 +202,12 @@ def main():
 
             if st.form_submit_button("Submit"):
                 st.session_state.auth = authenticate(username, password)
-                if not st.session_state.auth["response"]:
+                if st.session_state.auth["response"]:
+                    st.session_state.admin = True
+                else:
                     st.error("Неверный ключ")
-        if st.session_state.auth["response"]:
+
+        if st.session_state.admin:
 
             st.segmented_control(
                 "Func",
