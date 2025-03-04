@@ -49,16 +49,16 @@ def main():
     if "placeholder" not in st.session_state:
         st.session_state.placeholder = "Предложить"
 
-    def on_change(admin=False):
+    def on_change():
         st.session_state.disabled = True
         st.session_state.placeholder = st.session_state.new_mov
         # Функция добавления нового фильма в базу данных
         if st.session_state.new_mov.lower() not in ["хуй", "пенис", "пизда"]:
-            add_film(st.session_state.new_mov, admin)
+            add_film(st.session_state.new_mov)
         else:
             pass
 
-    def enable_input():
+    def enable_input(): 
         st.session_state.disabled = False
         st.session_state.placeholder = "Предложить"
 
@@ -179,13 +179,10 @@ def main():
 
         def admin_add_film():
             admin_access(
-                movie=mov,
+                movie=st.session_state.mov,
                 st_supabase_client=st.session_state.auth["client"],
-                key_word=key_word,
+                key_word=st.session_state.key_word,
             )
-
-        if "admin" not in st.session_state:
-            st.session_state.admin = False
 
         with st.form("my_form"):
             username = st.text_input(
@@ -202,18 +199,17 @@ def main():
 
             if st.form_submit_button("Submit"):
                 st.session_state.auth = authenticate(username, password)
-                if st.session_state.auth["response"]:
-                    st.session_state.admin = True
-                else:
+                if not st.session_state.auth["response"]:
                     st.error("Неверный ключ")
-        if st.session_state.admin:
+        if st.session_state.auth["response"]:
 
-            key_word = st.segmented_control(
-                "Func", ["insert", "delete"], selection_mode="single", default="insert"
+            st.segmented_control(
+                "Func", ["insert", "delete"], selection_mode="single", default="insert",
+                key='key_word'
             )
             # Показываем поле ввода текста только владельцу
-            mov = st.text_input(
-                " ", label_visibility="collapsed", on_change=admin_add_film
+            st.text_input(
+                " ", label_visibility="collapsed", key="mov", on_change=admin_add_film,
             )
 
 

@@ -189,7 +189,7 @@ def search_film(film_name) -> dict:
 
 
 # Сохранение данных обратно в CSV файл
-def add_film(new_mov, admin=False):
+def add_film(new_mov):
     """Ищет информацию о произведении и добавляет в бд
 
     Args:
@@ -207,9 +207,6 @@ def add_film(new_mov, admin=False):
             logger.success(f"Данные преобразованы: {new_mov} -> {mov_data['name']}")
 
             if mov_data is not None:
-                if admin:
-                    del mov_data["url"]  # Убираем колонку url
-
                 execute_query(
                     st_supabase_client.table(f"{db_table}").insert(mov_data), ttl=0
                 )
@@ -271,13 +268,7 @@ def admin_access(movie, st_supabase_client, key_word):
                 logger.success(f"Successfully {key_word}ed: {mov_data['name']}")
                 return
 
-        execute_query(
-            st_supabase_client.table(f"{db_table}").insert(
-                {"name": new_mov, "posterUrl": "-"}
-            ),
-            ttl=0,
-        )
-        logger.success(f"Добавлено только название {new_mov}")
+        logger.info(f"Фильм не найден. [admin_access]")
 
     except Exception as e:
         # Приводим сообщение к нижнему регистру для универсальности
@@ -285,7 +276,7 @@ def admin_access(movie, st_supabase_client, key_word):
 
         # Проверяем наличие кода ошибки 23505 или ключевых слов
         if "23505" in error_msg or "duplicate key" in error_msg:
-            logger.warning(f"Попытка добавить дубликат: {new_mov}")
+            logger.warning(f"Попытка добавить дубликат admin_access: {new_mov}")
         else:
             st.error(f"This is an error: {e}", icon="🚨")
-            logger.error(f"Ошибка add_film: {e}")
+            logger.error(f"Ошибка admin_access: {e}")
