@@ -266,9 +266,11 @@ def admin_access(movie, st_supabase_client, key_word):
                     raise ValueError(f"Неподдерживаемая операция: {key_word}")
 
                 logger.success(f"Successfully {key_word}ed: {mov_data['name']}")
+                st.success(f"Successfully {key_word}ed: {mov_data['name']}")
                 return
 
-        logger.info(f"Фильм не найден. [admin_access]")
+        logger.info("Фильм не найден")
+        st.info("Фильм не найден")
 
     except Exception as e:
         # Приводим сообщение к нижнему регистру для универсальности
@@ -276,7 +278,8 @@ def admin_access(movie, st_supabase_client, key_word):
 
         # Проверяем наличие кода ошибки 23505 или ключевых слов
         if "23505" in error_msg or "duplicate key" in error_msg:
-            logger.warning(f"Попытка добавить дубликат admin_access: {new_mov}")
+            logger.warning(f"Попытка добавить дубликат: {new_mov}")
+            st.warning('Дубликат')
         else:
             st.error(f"This is an error: {e}", icon="🚨")
-            logger.error(f"Ошибка admin_access: {e}")
+            logger.error(f"Ошибка: {e}")
