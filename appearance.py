@@ -1,50 +1,5 @@
 import time
 import streamlit as st
-from data_processing import add_film
-
-
-# Флаг: была ли отправлена форма
-def movie_form():
-    submitted = st.session_state.get("submitted", False)
-
-    # Если не отправлена форма, то создаем форму
-    if not submitted:
-        with st.form("add_movie_form"):
-            # Ввод фильма
-            mov = st.text_input(
-                "Название фильма",
-                label_visibility="collapsed",
-                placeholder="Предложить фильм...",
-                key="new_mov",
-            )
-            send = st.form_submit_button(
-                ":film_projector: Предложить",
-                use_container_width=True,
-                type="secondary",
-            )
-            # .strip() возвращает слово без пробелов в начале и конце
-            if send and mov.lower().strip():
-                # state того что отправили
-                st.session_state["submitted"] = True
-                if mov.lower() in ["хуй", "пенис", "пизда"]:
-                    st.session_state["bad_word"] = mov
-                else:
-                    add_film(mov)
-                st.rerun()
-    else:
-        bad_word = st.session_state.get("bad_word")
-        if bad_word:
-            st.error(
-                f"Себе {bad_word} порекомендуй, клоун 👊😡",
-                icon="🤡",
-            )
-            return
-        else:
-            st.success("Спасибо за предложение!!", icon="✅")
-        if st.button("Предложить еще"):
-            for key in ("submitted", "bad_word", "new_mov"):
-                st.session_state.pop(key, None)
-                st.rerun()
 
 
 def create_checkboxes():
