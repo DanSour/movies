@@ -1,4 +1,5 @@
 import streamlit as st
+
 from scripts.data_processing import logger
 from scripts.scripts_games import load_games
 
@@ -21,27 +22,31 @@ def main():
     #     ":rainbow-background[Игры, в которые я хочу когда-нибудь поиграть...]"
     # )
     # st.badge("Игры, в которые я хочу когда-нибудь поиграть...", icon=":material/deployed_code:", color="violet")
-    st.badge("Игры, в которые я хочу когда-нибудь поиграть...", icon=":material/diversity_2:", color="violet")
+    st.badge(
+        "Игры, в которые я хочу когда-нибудь поиграть...",
+        icon=":material/diversity_2:",
+        color="violet",
+    )
     # st.markdown(":violet-badge[:material/star: Favorite]")
 
-    df_games = load_games()
-
     st.write("Посмотреть постер - :green-badge[дважды] на него нажмай")
+
+    df_games = load_games()
 
     # Показать данные на экране через st.dataframe
     st.dataframe(
         df_games,
-        width='stretch',
+        width="stretch",
         # форматирование датафрейма
         column_config={
-            "game_name": st.column_config.TextColumn(
+            "name": st.column_config.TextColumn(
                 "Название",
                 width="medium",
             ),
-            "game_image_url": st.column_config.ImageColumn(
+            "posterUrl": st.column_config.ImageColumn(
                 "Постер",
             ),
-            "release_world": st.column_config.NumberColumn(
+            "year": st.column_config.NumberColumn(
                 "Год",
                 format="%d",
                 width="small",
@@ -57,14 +62,26 @@ def main():
             "completionist": st.column_config.NumberColumn(
                 "101%",
                 width="small",
-                help="Рейт на Кинопоиску",
             ),
-            "platform": st.column_config.TextColumn(
+            "platforms": st.column_config.TextColumn(
                 "Платформа",
                 width="small",
             ),
         },
         hide_index=True,
+    )
+
+    expander = st.expander("Additional information", expanded=False)
+    expander.write(
+        """
+        [Киберпанк-игры](https://kanobu.ru/games/collections/kiberpank-igry/)
+
+        Посмотреть игры разработанные компанией Starbreeze Studios
+
+        [FitGirl Repack](https://fitgirl-repack.com/)
+
+        Серия TOM CLANCY’S, SNIPER ELITE
+    """
     )
 
 
