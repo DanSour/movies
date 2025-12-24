@@ -36,10 +36,10 @@ def main():
         "которые я хочу посмотреть когда-нибудь...]"
     )
     
+    movie_form()
+
     # slider for years filter
     years = st.slider("Годы", min_value=1950, max_value=2030, value=(1986, 2010))
-
-    movie_form()
     selected_types = create_checkboxes()
     
     st.write("Посмотреть постер - :red[дважды] на него нажмай")
@@ -49,9 +49,9 @@ def main():
     # DataFrame filtration
     df_filtered = filter_dataframe(df, selected_types, years)
 
-    # Объединяем все списки жанров в один,
-    # преобразуем объединенный список в множество для получения уникальных жанров
-    # и удаляем заданные жанры из множества уникальных жанров
+    # Combine all genres into one list,
+    # convert into a set of unique genres
+    # and remove the specified genres from the set
     unique_genres = {
         genre for sublist in df_filtered["genres"] for genre in sublist.split(", ")
     } - {"аниме", "мультфильм"}
@@ -75,7 +75,7 @@ def main():
     st.dataframe(
         df_filtered,
         width='stretch',
-        # dataframe  formatting
+        # dataframe formatting
         column_config={
             "name": st.column_config.TextColumn(
                 "Название",
@@ -94,14 +94,12 @@ def main():
             ),
             "rating": st.column_config.NumberColumn(
                 "Рейтинг",
-                # width ='small',
                 help="Рейт на Кинопоиску",
             ),
             "length": st.column_config.TimeColumn(
                 "Длительность",
                 format="HH:mm",
             ),
-            # width ='small',
             "type": st.column_config.TextColumn(
                 "Формат",
             ),

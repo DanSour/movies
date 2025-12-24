@@ -1,9 +1,10 @@
 import pandas as pd
-import streamlit as st
-from st_supabase_connection import execute_query
-from scripts.data_processing import init_supabase_client
-from loguru import logger
 import requests
+import streamlit as st
+from loguru import logger
+from st_supabase_connection import execute_query
+
+from scripts.data_processing import init_supabase_client
 
 
 # Load the data from a SupabaseConnection. We're caching this so
@@ -16,9 +17,10 @@ def load_movies():
     Returns:
         pd.DataFrame: таблица фильмов из БД
     """
-
     st_supabase_client = init_supabase_client()
-    request = execute_query(st_supabase_client.table("movies").select("*"), ttl=0)
+    request = execute_query(
+        st_supabase_client.table("movies").select("*").order("year"), ttl=0
+    )
 
     return pd.DataFrame(request.data)
 
@@ -64,7 +66,43 @@ def get_movie_type(movie_vars):
         return "Неизвестный тип"
 
 
-def data_preparation(mov_vars):
+def search_film(film_name) -> dict:
+    """Ищет информацию о произведении по API кинопоиска
+
+    Args:
+        film_name (str): название произведения.
+
+    Returns:
+        dict: словарь с информацией о произведении.
+    """
+    url = "https://kinopoiskapiunofficial.tech/api/v2.1/films/search-by-keyword"
+    # Заголовки запроса
+    headers = {
+        "X-API-KEY": st.secrets["API_KEY"],
+        "Content-Type": "application/json",
+    }
+    # Параметры запроса
+    film_name = film_name.lower()
+    params = {"keyword": film_name}  # Ключевое слово для поиска
+
+    try:
+        response = requests.get(url, headers=headers, params=params, timeout=4)
+
+        # Проверяем, успешен ли запрос
+        if response.status_code == 200:
+            film_data = response.json()  # Преобразуем ответ в JSON
+            films = film_data.get("films", [])
+            return films[0] if films else None
+        else:
+            logger.error(f"response err: {response.status_code} - {response.text}")
+            return None
+    except Exception as e:
+        # print(f'Произошла ошибка: {e}')
+        st.error("search_film error", icon="🚨")
+        logger.error(f"Ошибка search_film: {e}")
+
+
+def data_preparation(mov_vars) -> dict:
     """Обрабатывает входящий файл и оставляет нужные данные
 
     Args:
@@ -74,7 +112,6 @@ def data_preparation(mov_vars):
         dict: Нужная информация о произведении.
     """
     try:
-
         keys_to_keep = [
             "filmId",
             "nameRu",
@@ -100,26 +137,25 @@ def data_preparation(mov_vars):
         return mov_vars
 
     except Exception as e:
-        logger.error(f"Произошла ошибка data_preparation: {e}, mov_vars")
+        logger.error(f"data_preparation error: {e}, mov_vars")
         return None
 
 
-# Сохранение данных обратно в CSV файл
-def add_film(new_mov):
-    """Ищет информацию о произведении и добавляет в бд
+# Сохранение данных в БД рекомендаций
+def offer_film(new_mov):
+    """Ищет информацию о произведении и добавляет в БД "Рекомендованные фильмы"
 
     Args:
-        new_mov (str): название произведения.
+        new_mov (str): название произведения
     """
     try:
         st_supabase_client = init_supabase_client()
         db_table = "offered_movies"
 
-        new_mov = new_mov.lower()
-        mov_vars = search_film(new_mov)
+        raw_data = search_film(new_mov)
 
-        if mov_vars is not None:
-            mov_data = data_preparation(mov_vars)
+        if raw_data is not None:
+            mov_data = data_preparation(raw_data)
             logger.success(f"Данные преобразованы: {new_mov} -> {mov_data['name']}")
 
             if mov_data is not None:
@@ -146,7 +182,7 @@ def add_film(new_mov):
             logger.warning(f"Попытка добавить дубликат: {new_mov}")
         else:
             st.error(f"This is an error: {e}", icon="🚨")
-            logger.error(f"Ошибка add_film: {e}")
+            logger.error(f"offer_film error: {e}")
 
 
 # Флаг: была ли отправлена форма
@@ -175,7 +211,7 @@ def movie_form():
                 if mov.lower() in ["хуй", "пенис", "пизда"]:
                     st.session_state["bad_word"] = mov
                 else:
-                    add_film(mov)
+                    offer_film(mov)
                 st.rerun()
     else:
         bad_word = st.session_state.get("bad_word")
@@ -193,36 +229,25 @@ def movie_form():
                 st.rerun()
 
 
-def search_film(film_name) -> dict:
-    """Ищет информацию о произведении по API кинопоиска
+def process_movie(movie_name: str):
+    """
+    Полная обработка фильма: поиск + подготовка
 
     Args:
-        film_name (str): название произведения.
+        name: Название фильма
 
     Returns:
-        dict: словарь с информацией о произведении.
+        Готовые данные для БД или None
     """
-    url = "https://kinopoiskapiunofficial.tech/api/v2.1/films/search-by-keyword"
-    # Заголовки запроса
-    headers = {
-        "X-API-KEY": st.secrets["API_KEY"],
-        "Content-Type": "application/json",
-    }
-    # Параметры запроса
-    params = {"keyword": film_name}  # Ключевое слово для поиска
+    # from scripts.scripts_movies import data_preparation, search_film
 
-    try:
-        response = requests.get(url, headers=headers, params=params, timeout=4)
+    raw_data = search_film(movie_name)
 
-        # Проверяем, успешен ли запрос
-        if response.status_code == 200:
-            film_data = response.json()  # Преобразуем ответ в JSON
-            films = film_data.get("films", [])
-            return films[0] if films else None
-        else:
-            logger.error(f"response err: {response.status_code} - {response.text}")
-            return None
-    except Exception as e:
-        # print(f'Произошла ошибка: {e}')
-        st.error("search_film error", icon="🚨")
-        logger.error(f"Ошибка search_film: {e}")
+    if raw_data is not None:
+        mov_data = data_preparation(raw_data)
+
+        if mov_data is not None:
+            del mov_data["url"]  # Убираем колонку url
+
+        return mov_data
+    return None
