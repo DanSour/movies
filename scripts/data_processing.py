@@ -19,14 +19,14 @@ def init_supabase_client():
 
 
 def authenticate(username: str, password: str) -> dict:
-    """Аутентификация пользователя
+    """User authentication
 
     Args:
-        username (str): Почта которая зарегистрирована для изменения бд
-        password (str): Зарегистрированный пароль
+        username (str): Email registered for database modification
+        password (str): Registered password
 
     Returns:
-        dict: Словарь с данными об успешном подключении и клиентом supabase_client
+        dict: Dictionary containing connection success status and the Supabase client
     """
     client = init_supabase_client()
     response = client.auth.sign_in_with_password(
@@ -36,15 +36,15 @@ def authenticate(username: str, password: str) -> dict:
 
 
 def filter_dataframe(df, selected_types, years):
-    """Фильтрует DataFrame по выбранным типам контента и диапазону лет.
+    """Filters a DataFrame by selected content types and year range
 
     Args:
-        df (pd.DataFrame): Исходный DataFrame.
-        selected_types (list): Список выбранных типов контента.
-        years (tuple): Диапазон лет (min_year, max_year).
+        df (pd.DataFrame): The input DataFrame
+        selected_types (list): List of selected content types
+        years (tuple): Year range (min_year, max_year)
 
     Returns:
-        pd.DataFrame: Отфильтрованный DataFrame.
+        pd.DataFrame: The filtered DataFrame
     """
     try:
         year_filter = df["year"].between(years[0], years[1])
@@ -58,73 +58,121 @@ def filter_dataframe(df, selected_types, years):
         return pd.DataFrame()
 
 
-def db_editing(type, function, name, st_supabase_client):
-    from scripts.scripts_movies import data_preparation, search_film
+def process_media_by_type(table: str, name: str) -> dict:
+    from scripts.scripts_games import process_game
+    from scripts.scripts_movies import process_movie
 
-    """Ищет информацию о произведении и добавляет в бд
+    """
+    Process media based on its type
 
     Args:
-        new_mov (str): название произведения.
+        table: Table name (movies/games)
+        name: Media name
+
+    Returns:
+        Prepared data or None
     """
-    tables = {
-        "🎬 Movie": "movies",
-        "🎮 Game": "games"
-    }
+    if table == "movies":
+        return process_movie(name)
+    elif table == "games":
+        return process_game(name)
+    else:
+        logger.error(f"Unknown table type: {table}")
+        return None
 
-    actions = {
-        "➕ Insert": "insert",
-        "🗑️ Delete": "delete"
-    }
 
-    db_table = tables[type]  # "movies"
-    action = actions[function]
-# Надо добавить логику 
-# если фильм - отдаем в функицю в которую передаем название, экшен и дб
-# если игра - отдаем в другую функцию обработки и считывания, но
-# действия (add/delete) отдельная функция
+def execute_db_operation(supabase_client, table: str, action: str, data: dict):
+    """
+    Executes a database operation based on the specified action.
+
+    Args:
+        supabase_client: The Supabase client instance.
+        table (str): The name of the table to perform the operation on.
+        action (str): The type of operation to perform ("insert" or "delete").
+        data (dict): The data to be used in the operation.
+
+    Raises:
+        ValueError: If the specified action is unsupported.
+        Exception: For any other errors encountered during execution.
+    """
     try:
-        if db_table == "movies":
-            new_mov = name.lower()
-            mov_vars = search_film(new_mov)
+        if action == "insert":
+            execute_query(supabase_client.table(f"{table}").insert(data), ttl=0)
 
-            if mov_vars is not None:
-                mov_data = data_preparation(mov_vars)
+        elif action == "delete":
+            action = "delet"
+            executed = execute_query(
+                supabase_client.table(f"{table}").delete().eq("name", data["name"]),
+                ttl=0,
+            )
+            if executed.data == []:
+                logger.info(f'"{data["name"]}" not in DB')
+                st.warning(f"⚠️ '{data['name']}' not in DB")
+                return
 
-                if mov_data is not None:
-                    del mov_data["url"]  # Убираем колонку url
+        logger.success(f"Successfully {action}ed: {data['name']}")
+        st.success(f"✅ Successfully {action}ed: {data['name']}")
+        return
 
-                    # Выполняем операцию в зависимости от ключевого слова
-                    if action == "insert":
-                        execute_query(
-                            st_supabase_client.table(f"{db_table}").insert(mov_data), ttl=0
-                        )
-                    elif action == "delete":
-                        # for success message
-                        action = "delet"
-                        execute_query(
-                            st_supabase_client.table(f"{db_table}")
-                            .delete()
-                            .eq("name", mov_data["name"]),
-                            ttl=0,
-                        )
-                    else:
-                        raise ValueError(f"Неподдерживаемая операция: {action}")
-
-                    logger.success(f"Successfully {action}ed: {mov_data['name']}")
-                    st.success(f"Successfully {action}ed: {mov_data['name']}")
-                    return
-
-        logger.info("Фильм не найден")
-        st.info("Фильм не найден")
-
+    except ValueError as ve:
+        logger.error(f"Unsupported operation '{action}' caused ValueError: {ve}")
+        st.error(f"Unsupported operation: {action}")
     except Exception as e:
-        # Приводим сообщение к нижнему регистру для универсальности
+        # Convert the message to lowercase for consistency
         error_msg = str(e).lower()
 
-        # Проверяем наличие кода ошибки 23505 или ключевых слов
-        if "23505" in error_msg or "duplicate key" in error_msg:
-            logger.warning(f"Попытка добавить дубликат: {new_mov}")
-            st.warning("Дубликат")
+        # Check for error code 23505 or keywords "duplicate"
+        if "23505" in error_msg or "duplicate" in error_msg:
+            logger.warning(f"Duplicate: {data["name"]}")
+            st.warning("⚠️ Duplicate")
         else:
-            st.error(f"This is an error: {e}", icon="🚨")
-            logger.error(f"Ошибка: {e}")
+            logger.error(f"execute_db_operation error: {e}")
+            st.error(f"execute_db_operation error: {e}", icon="🚨")
+
+
+def handle_media_operation(
+    media_type: str, action_type: str, name: str, supabase_client
+):
+    """
+    Process media: find, prepare data, and perform the operation.
+
+    Args:
+        media_type: 🎬 Movie / 🎮 Game
+        action_type: ➕ Insert / 🗑️ Delete
+        name: Media name
+        supabase_client: Supabase client instance
+
+    """
+    MEDIA_TABLES = {"🎬 Movie": "movies", "🎮 Game": "games"}
+
+    ACTIONS = {"➕ Insert": "insert", "🗑️ Delete": "delete"}
+
+    table = MEDIA_TABLES.get(media_type)
+    action = ACTIONS.get(action_type)
+
+    if not table:
+        st.error(f"Invalid media type: {media_type}")
+        return
+
+    if not action:
+        st.error(f"Invalid action: {action_type}")
+        return
+
+    try:
+        # processing media (search + preparation)
+        data = process_media_by_type(table, name)
+
+        if data is None:
+            message = f"{media_type} not found: '{name}'"
+            st.info(message)
+            logger.warning(message)
+            return
+
+        # operate in DB (insert/delete)
+        execute_db_operation(supabase_client, table, action, data)
+
+        return
+
+    except Exception as e:
+        st.error(f"handle_media_operation error: {e}", icon="🚨")
+        logger.error(f"handle_media_operation error: {e}")
