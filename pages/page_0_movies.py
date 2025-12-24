@@ -1,26 +1,23 @@
 import streamlit as st
-from gotrue.errors import AuthApiError
 
-from appearance import create_checkboxes, links_to_watch, movie_form
-from data_processing import (
-    filter_dataframe,
-    load_data,
-    logger,
-)
+from appearance import create_checkboxes, links_to_watch
+from scripts.data_processing import filter_dataframe, logger
+from scripts.scripts_movies import load_movies, movie_form
 
-logger.add(
-    "logs/data_processing/debug.log",
-    rotation="100 MB",
-    compression="zip",
-    level="DEBUG",
-)
+# logger.add(
+#     "logs/data_processing/debug.log",
+#     rotation="100 MB",
+#     compression="zip",
+#     level="DEBUG",
+# )
 def main():
 
-    # st.cache_data.clear()
+    st.cache_data.clear()
     # Show the page title and description.
     st.set_page_config(
         page_title="Список фильмов",
-        # initial_sidebar_state="collapsed",
+        # initial_sidebar_state="expanded",
+        initial_sidebar_state="collapsed",
         page_icon="🎬",
         menu_items={
             "About": "# This is an *extremely* cool app! \n\
@@ -38,25 +35,28 @@ def main():
         ":violet-background[это все произведения, "
         "которые я хочу посмотреть когда-нибудь...]"
     )
-
-    df = load_data()
+    
     movie_form()
+
+    # slider for years filter
+    years = st.slider("Годы", min_value=1950, max_value=2030, value=(1986, 2010))
     selected_types = create_checkboxes()
     
-    # Добавляем слайдер для выбора года
-    years = st.slider("Годы", min_value=1950, max_value=2030, value=(1954, 2010))
+    st.write("Посмотреть постер - :red[дважды] на него нажмай")
+    
+    df = load_movies()
 
-    # Фильтрация DataFrame
+    # DataFrame filtration
     df_filtered = filter_dataframe(df, selected_types, years)
 
-    # Объединяем все списки жанров в один,
-    # преобразуем объединенный список в множество для получения уникальных жанров
-    # и удаляем заданные жанры из множества уникальных жанров
+    # Combine all genres into one list,
+    # convert into a set of unique genres
+    # and remove the specified genres from the set
     unique_genres = {
         genre for sublist in df_filtered["genres"] for genre in sublist.split(", ")
     } - {"аниме", "мультфильм"}
 
-    # Теперь можно использовать unique_genres в multiselect
+    # using unique_genres in multiselect
     genres = st.multiselect(
         "genres",
         sorted(unique_genres),
@@ -71,13 +71,11 @@ def main():
             )
         ]
 
-    st.write("Посмотреть постер - :red[дважды] на него нажмай")
-
-    # Показать данные на экране через st.dataframe
+    # Show data with st.dataframe
     st.dataframe(
         df_filtered,
-        use_container_width=True,
-        # форматирование датафрейма
+        width='stretch',
+        # dataframe formatting
         column_config={
             "name": st.column_config.TextColumn(
                 "Название",
@@ -96,14 +94,12 @@ def main():
             ),
             "rating": st.column_config.NumberColumn(
                 "Рейтинг",
-                # width ='small',
                 help="Рейт на Кинопоиску",
             ),
             "length": st.column_config.TimeColumn(
                 "Длительность",
                 format="HH:mm",
             ),
-            # width ='small',
             "type": st.column_config.TextColumn(
                 "Формат",
             ),
@@ -135,16 +131,16 @@ if __name__ == "__main__":
     try:
         main()
     except ValueError as ve:
-        logger.error(f"Ошибка ValueError в main: {ve}")
+        logger.error(f"ValueError in main: {ve}")
+        st.error(f"ValueError in main: {ve}")
     except TypeError as te:
-        logger.error(f"Ошибка TypeError в main: {te}")
+        logger.error(f"TypeError in main: {te}")
+        st.error(f"TypeError in main: {te}")
     # Можно добавлять конкретные исключения по мере необходимости
     # except SomeSpecificException as se:
-    #     logger.error(f"Ошибка SomeSpecificException в main: {se}")
-    except AuthApiError as e:
-        # Обработка ошибки авторизации
-        logger.error(f"Ошибка авторизации: {e}")
-        st.sidebar.error("Неверный email или пароль ❌")
+    # logger.error(f"Ошибка SomeSpecificException в main: {se}")
     except Exception as e:
-        logger.error(f"Неожиданная ошибка в main: {e}")
+        logger.error(f"This is an error in main: {e}")
+        st.error(f"This is an error in main: {e}", icon="🚨")
+        
 

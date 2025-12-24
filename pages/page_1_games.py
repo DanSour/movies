@@ -1,51 +1,102 @@
-# Copyright 2018-2022 Streamlit Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import streamlit as st
-import time
-import numpy as np
+
+from scripts.data_processing import logger
+from scripts.scripts_games import load_games
 
 
-def plotting_demo():
-    progress_bar = st.sidebar.progress(0)
-    status_text = st.sidebar.empty()
-    last_rows = np.random.randn(1, 1)
-    chart = st.line_chart(last_rows)
+def main():
 
-    for i in range(1, 101):
-        new_rows = last_rows[-1, :] + np.random.randn(5, 1).cumsum(axis=0)
-        status_text.text("%i%% Complete" % i)
-        chart.add_rows(new_rows)
-        progress_bar.progress(i)
-        last_rows = new_rows
-        time.sleep(0.05)
+    # Show the page title and description.
+    st.set_page_config(
+        page_title="Games list",
+        initial_sidebar_state="collapsed",
+        page_icon="🎮",
+    )
 
-    progress_bar.empty()
+    st.title("🎮 Games List")
+    st.subheader(
+        "♠️♦️🎲 Wanna Play 🎲♣️♥️",
+        divider="rainbow",
+    )
+    # st.write(
+    #     ":rainbow-background[Игры, в которые я хочу когда-нибудь поиграть...]"
+    # )
+    # st.badge("Игры, в которые я хочу когда-нибудь поиграть...", icon=":material/deployed_code:", color="violet")
+    st.badge(
+        "Игры, в которые я хочу когда-нибудь поиграть...",
+        icon=":material/diversity_2:",
+        color="violet",
+    )
+    # st.markdown(":violet-badge[:material/star: Favorite]")
 
-    # Streamlit widgets automatically run the script from top to bottom. Since
-    # this button is not connected to any other logic, it just causes a plain
-    # rerun.
-    st.button("Re-run")
+    st.write("Посмотреть постер - :green-badge[дважды] на него нажмай")
+
+    df_games = load_games()
+
+    # Показать данные на экране через st.dataframe
+    st.dataframe(
+        df_games,
+        width="stretch",
+        # форматирование датафрейма
+        column_config={
+            "name": st.column_config.TextColumn(
+                "Название",
+                width="medium",
+            ),
+            "posterUrl": st.column_config.ImageColumn(
+                "Постер",
+            ),
+            "year": st.column_config.NumberColumn(
+                "Год",
+                format="%d",
+                width="small",
+            ),
+            "main_story": st.column_config.NumberColumn(
+                "Время прохождения",
+                width="small",
+            ),
+            "main_extra": st.column_config.NumberColumn(
+                "Extra",
+                width="small",
+            ),
+            "completionist": st.column_config.NumberColumn(
+                "101%",
+                width="small",
+            ),
+            "platforms": st.column_config.TextColumn(
+                "Платформа",
+                width="small",
+            ),
+        },
+        hide_index=True,
+    )
+
+    expander = st.expander("Additional information", expanded=False)
+    expander.write(
+        """
+        [Киберпанк-игры](https://kanobu.ru/games/collections/kiberpank-igry/)
+
+        Посмотреть игры разработанные компанией Starbreeze Studios
+
+        [FitGirl Repack](https://fitgirl-repack.com/)
+
+        Серия TOM CLANCY’S, SNIPER ELITE
+    """
+    )
 
 
-st.set_page_config(page_title="Plotting Demo", page_icon="📈")
-st.markdown("# Plotting Demo")
-st.sidebar.header("Plotting Demo")
-st.write(
-    """This demo illustrates a combination of plotting and animation with
-Streamlit. We're generating a bunch of random numbers in a loop for around
-5 seconds. Enjoy!"""
-)
-
-plotting_demo()
+if __name__ == "__main__":
+    try:
+        main()
+    except ValueError as ve:
+        logger.error(f"ValueError in main: {ve}")
+        st.error(f"ValueError in main: {ve}", icon="🚨")
+    except TypeError as te:
+        logger.error(f"TypeError in main: {te}")
+        st.error(f"TypeError in main: {te}", icon="🚨")
+    # Можно добавлять конкретные исключения по мере необходимости
+    # except SomeSpecificException as se:
+    #     logger.error(f"Ошибка SomeSpecificException в main: {se}")
+    except Exception as e:
+        logger.error(f"Error in main: {e}")
+        st.error(f"Error in main: {e}", icon="🚨")

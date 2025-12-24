@@ -2,3 +2,4 @@ streamlit
 loguru
 st-supabase-connection
 gotrue
+howlongtobeatpy
