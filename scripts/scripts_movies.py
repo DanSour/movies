@@ -102,14 +102,14 @@ def search_film(film_name) -> dict:
         logger.error(f"Ошибка search_film: {e}")
 
 
-def data_preparation(mov_vars) -> dict:
-    """Обрабатывает входящий файл и оставляет нужные данные
+def data_preparation(raw_data) -> dict:
+    """Processes the input data and extracts the required information.
 
     Args:
-        mov_vars (dict): словарь с большой информацией о произведении.
+        raw_data (dict): Dictionary containing extensive information about the movie.
 
     Returns:
-        dict: Нужная информация о произведении.
+        dict: Extracted information about the movie.
     """
     try:
         keys_to_keep = [
@@ -122,9 +122,11 @@ def data_preparation(mov_vars) -> dict:
             "filmLength",
             "type",
         ]
-        mov_vars = {k: mov_vars.get(k, None) for k in keys_to_keep}
+        mov_vars = {k: raw_data.get(k, None) for k in keys_to_keep}
 
         mov_vars["name"] = mov_vars.pop("nameRu")
+        if mov_vars["name"] is None:
+            mov_vars["name"] = raw_data.get('nameEn')
         mov_vars["url"] = f"https://www.kinopoisk.ru/film/{mov_vars.pop('filmId')}"
 
         mov_vars["genres"] = ", ".join([item["genre"] for item in mov_vars["genres"]])

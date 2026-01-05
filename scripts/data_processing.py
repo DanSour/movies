@@ -106,12 +106,12 @@ def execute_db_operation(supabase_client, table: str, action: str, data: dict):
                 ttl=0,
             )
             if executed.data == []:
-                logger.info(f'"{data["name"]}" not in DB')
-                st.warning(f"⚠️ '{data['name']}' not in DB")
+                logger.info(f'"{data["name"]} ({data["year"]})" not in DB')
+                st.warning(f'⚠️ "{data["name"]} ({data["year"]})" not in DB')
                 return
 
-        logger.success(f"Successfully {action}ed: {data['name']}")
-        st.success(f"✅ Successfully {action}ed: {data['name']}")
+        logger.success(f"Successfully {action}ed: {data['name']} ({data['year']})")
+        st.success(f"✅ Successfully {action}ed: {data['name']} ({data['year']})")
         return
 
     except ValueError as ve:
@@ -123,8 +123,8 @@ def execute_db_operation(supabase_client, table: str, action: str, data: dict):
 
         # Check for error code 23505 or keywords "duplicate"
         if "23505" in error_msg or "duplicate" in error_msg:
-            logger.warning(f"Duplicate: {data["name"]}")
-            st.warning("⚠️ Duplicate")
+            logger.warning(f"Duplicate: {data['name']} ({data['year']})")
+            st.warning(f"⚠️ Duplicate: {data['name']} ({data['year']})")
         else:
             logger.error(f"execute_db_operation error: {e}")
             st.error(f"execute_db_operation error: {e}", icon="🚨")
