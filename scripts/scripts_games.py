@@ -36,8 +36,9 @@ def process_game(game_name: str) -> dict:
         Prepared data for DB or None
     """
     try:
+        game_name = game_name.lower().strip()
         results = HowLongToBeat().search(game_name)
-        if results != []:
+        if results is not None and len(results) > 0:
             game = results[0]
             game_vars = vars(game)
 
