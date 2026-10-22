@@ -10,6 +10,8 @@ from scripts.scripts_movies import load_movies, movie_form
 #     compression="zip",
 #     level="DEBUG",
 # )
+
+
 def main():
 
     st.cache_data.clear()
@@ -35,15 +37,15 @@ def main():
         ":violet-background[это все произведения, "
         "которые я хочу посмотреть когда-нибудь...]"
     )
-    
+
     movie_form()
 
     # slider for years filter
-    years = st.slider("Годы", min_value=1950, max_value=2030, value=(1986, 2010))
+    years = st.slider("Годы", min_value=1950, max_value=2030, value=(1990, 2020))
     selected_types = create_checkboxes()
-    
+
     st.write("Посмотреть постер - :red[дважды] на него нажмай")
-    
+
     df = load_movies()
 
     # DataFrame filtration
