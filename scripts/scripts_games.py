@@ -37,7 +37,10 @@ def process_game(game_name: str) -> dict:
     """
     try:
         game_name = game_name.lower().strip()
-        results = HowLongToBeat().search(game_name)
+        if game_name.isdigit():
+            results = HowLongToBeat().search_from_id(int(game_name))  # for search by ID
+        else:
+            results = HowLongToBeat().search(game_name)  # for search by game_name
         if results is not None and len(results) > 0:
             game = results[0]
             game_vars = vars(game)
