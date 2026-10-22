@@ -110,20 +110,20 @@ def main():
     st.button("Где посмотреть", key="wherewatch")
     placeholder = st.empty()
 
-    # Инициализация состояния
+    # Check if 'displayed_text' is in session state, if not, initialize it
     if "displayed_text" not in st.session_state:
         st.session_state.displayed_text = ""
 
-    # Показываем сохранённый текст при наличии
+    # Check if 'wherewatch' is in session state, if not, initialize it
     if st.session_state.displayed_text:
         placeholder.markdown(st.session_state.displayed_text)
 
     if st.session_state.wherewatch:
-        # Сброс предыдущего текста
+        # If the button is clicked, clear the placeholder and reset the displayed text
         st.session_state.displayed_text = ""
         placeholder.empty()
 
-        # Анимация ввода
+        # Animation for loading
         st.session_state.displayed_text = links_to_watch(placeholder)
 
 
@@ -136,11 +136,7 @@ if __name__ == "__main__":
     except TypeError as te:
         logger.error(f"TypeError in main: {te}")
         st.error(f"TypeError in main: {te}")
-    # Можно добавлять конкретные исключения по мере необходимости
-    # except SomeSpecificException as se:
-    # logger.error(f"Ошибка SomeSpecificException в main: {se}")
+    # We can add more specific exception handling as needed
     except Exception as e:
         logger.error(f"This is an error in main: {e}")
         st.error(f"This is an error in main: {e}", icon="🚨")
-        
-

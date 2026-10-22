@@ -33,11 +33,10 @@ def main():
 
     df_games = load_games()
 
-    # Показать данные на экране через st.dataframe
     st.dataframe(
         df_games,
         width="stretch",
-        # форматирование датафрейма
+        # data formatting
         column_config={
             "name": st.column_config.TextColumn(
                 "Название",
@@ -94,9 +93,7 @@ if __name__ == "__main__":
     except TypeError as te:
         logger.error(f"TypeError in main: {te}")
         st.error(f"TypeError in main: {te}", icon="🚨")
-    # Можно добавлять конкретные исключения по мере необходимости
-    # except SomeSpecificException as se:
-    #     logger.error(f"Ошибка SomeSpecificException в main: {se}")
+    # We can add more specific exception handling as needed
     except Exception as e:
         logger.error(f"Error in main: {e}")
         st.error(f"Error in main: {e}", icon="🚨")

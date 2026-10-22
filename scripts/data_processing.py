@@ -99,6 +99,9 @@ def execute_db_operation(supabase_client, table: str, action: str, data: dict):
         if action == "insert":
             execute_query(supabase_client.table(f"{table}").insert(data), ttl=0)
 
+            logger.success(f"Successfully {action}ed: {data['name']} ({data['year']})")
+            st.success(f"Successfully {action}ed: {data['name']} ({data['year']})", icon="✅")
+
         elif action == "delete":
             action = "delet"
             executed = execute_query(
@@ -106,17 +109,18 @@ def execute_db_operation(supabase_client, table: str, action: str, data: dict):
                 ttl=0,
             )
             if executed.data == []:
-                logger.info(f'"{data["name"]} ({data["year"]})" not in DB')
-                st.warning(f'⚠️ "{data["name"]} ({data["year"]})" not in DB')
+                logger.info(f"{data["name"]} ({data["year"]}) not in DB")
+                st.warning(f"{data["name"]} ({data["year"]}) not in DB", icon="ℹ️")
                 return
 
-        logger.success(f"Successfully {action}ed: {data['name']} ({data['year']})")
-        st.success(f"✅ Successfully {action}ed: {data['name']} ({data['year']})")
+            logger.success(f"Successfully {action}ed: {data['name']} ({data['year']})")
+            st.success(f"✔️ Successfully {action}ed: {data['name']} ({data['year']})", icon="🗑️")
+
         return
 
     except ValueError as ve:
         logger.error(f"Unsupported operation '{action}' caused ValueError: {ve}")
-        st.error(f"Unsupported operation: {action}")
+        st.error(f"Unsupported operation: {action}", icon="🚨")
     except Exception as e:
         # Convert the message to lowercase for consistency
         error_msg = str(e).lower()
@@ -124,10 +128,13 @@ def execute_db_operation(supabase_client, table: str, action: str, data: dict):
         # Check for error code 23505 or keywords "duplicate"
         if "23505" in error_msg or "duplicate" in error_msg:
             logger.warning(f"Duplicate: {data['name']} ({data['year']})")
-            st.warning(f"⚠️ Duplicate: {data['name']} ({data['year']})")
+            st.warning(f"Duplicate: {data['name']} ({data['year']})", icon="⚠️")
+        elif "null value in column" in error_msg:
+            logger.error(f"Null value error for {data['name']} ({data['year']}): {e}")
+            st.error(f"Null value error: {e}", icon="⚠️")
         else:
             logger.error(f"execute_db_operation error: {e}")
-            st.error(f"execute_db_operation error: {e}", icon="🚨")
+            st.error(f"Database execution issue: {e}", icon="🚨")
 
 
 def handle_media_operation(
@@ -174,5 +181,5 @@ def handle_media_operation(
         return
 
     except Exception as e:
-        st.error(f"handle_media_operation error: {e}", icon="🚨")
+        st.error(f"Media operation error: {e}", icon="🚨")
         logger.error(f"handle_media_operation error: {e}")

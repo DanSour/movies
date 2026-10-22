@@ -14,7 +14,7 @@ def admin_callback():
     return
 
 
-# Проверка, является ли пользователь владельцем
+# Checking if the user is admin
 def main():
 
     admin = st.session_state.get("admin", False)
@@ -33,7 +33,6 @@ def main():
                 placeholder="password",
             )
 
-            # if st.form_submit_button("Submit"):
             submitted = st.form_submit_button("Submit")
             if submitted:
                 st.session_state.auth = authenticate(username, password)
@@ -84,11 +83,9 @@ if __name__ == "__main__":
         logger.error(f"Ошибка ValueError в main: {ve}")
     except TypeError as te:
         logger.error(f"Ошибка TypeError в main: {te}")
-    # Можно добавлять конкретные исключения по мере необходимости
-    # except SomeSpecificException as se:
-    #     logger.error(f"Ошибка SomeSpecificException в main: {se}")
+    # We can add more specific exception handling as needed
     except AuthApiError as e:
-        # Обработка ошибки авторизации
+        # Handle authentication errors specifically
         logger.error(f"Ошибка авторизации: {e}")
         st.error("Неверный email или пароль ❌")
     except Exception as e:

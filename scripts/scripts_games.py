@@ -27,7 +27,7 @@ def load_games():
 
 def process_game(game_name: str) -> dict:
     """
-    Full game processing: search + fromatting
+    Full game processing: search + formatting
 
     Args:
         name: Name of the game
@@ -67,6 +67,6 @@ def process_game(game_name: str) -> dict:
         return None
 
     except Exception as e:
-        st.error("search_game error", icon="🚨")
-        logger.error(f"search_game error: {e}, game_vars")
+        st.error("HowLongToBeat search issue", icon="🚨")
+        logger.error(f"process_game error: {e}")
         return None

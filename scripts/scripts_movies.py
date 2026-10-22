@@ -12,10 +12,10 @@ from scripts.data_processing import init_supabase_client
 # reruns (e.g. if the user interacts with the widgets).
 @st.cache_data
 def load_movies():
-    """Загрузка данных
+    """Data uploading
 
     Returns:
-        pd.DataFrame: таблица фильмов из БД
+        pd.DataFrame: movies table from DB
     """
     st_supabase_client = init_supabase_client()
     request = execute_query(
@@ -26,24 +26,23 @@ def load_movies():
 
 
 def get_movie_type(movie_vars):
-    """Определяет тип произведения (фильм, сериал, аниме и т.д.)
-    на основе жанров и типа.
+    """Determines the type of a movie based on its genres and type.
 
     Args:
-        movie_vars (dict): Словарь с информацией о произведении (жанры, тип).
+        movie_vars (dict): Dictionary with information about the movie (genres, type).
 
     Returns:
-        _type_: Тип произведения как строка.
+        _type_: The type of the movie as a string.
     """
     try:
-        # Нормализация входных данных
+        # Extract genres and type from the movie_vars dictionary
         genres = set((movie_vars.get("genres", "") or "").lower().split(", "))
         movie_type = movie_vars.get("type", "")
 
-        # Маппинг типов по умолчанию
+        # Define a mapping for standard movie types
         type_mapping = {"FILM": "Фильм", "TV_SERIES": "Сериал", "MINI_SERIES": "Сериал"}
 
-        # Проверка специальных случаев
+        # Check for special cases based on genres
         if "аниме" in genres:
             return (
                 "Аниме-сериал"
@@ -57,49 +56,49 @@ def get_movie_type(movie_vars):
                 else "Мульт"
             )
 
-        # Если специальные случаи не подходят, используем стандартный маппинг
-        return type_mapping.get(movie_type, "Неизвестный тип")
+        # Return the mapped type or a default value if not found
+        return type_mapping.get(movie_type, "Неизвестный")
 
     except AttributeError as e:
-        # Логирование конкретной ошибки
-        logger.error(f"Ошибка обработки данных в get_movie_type: {e}")
+        # Handle cases where movie_vars is not a dictionary or has unexpected structure
+        logger.error(f"get_movie_type error: {e}")
         return "Неизвестный тип"
 
 
 def search_film(film_name) -> dict:
-    """Ищет информацию о произведении по API кинопоиска
+    """Searches for information about a film using the Kinopoisk API.
 
     Args:
-        film_name (str): название произведения.
+        film_name (str): The name of the film to search for.
 
     Returns:
-        dict: словарь с информацией о произведении.
+        dict: Dictionary with information about the film.
     """
     url = "https://kinopoiskapiunofficial.tech/api/v2.1/films/search-by-keyword"
-    # Заголовки запроса
+
+    # Headers for the API request
     headers = {
         "X-API-KEY": st.secrets["API_KEY"],
         "Content-Type": "application/json",
     }
-    # Параметры запроса
+    # Normalize the film name to lowercase for consistent searching
     film_name = film_name.lower()
-    params = {"keyword": film_name}  # Ключевое слово для поиска
+    params = {"keyword": film_name}  # Parameters for the API request
 
     try:
         response = requests.get(url, headers=headers, params=params, timeout=4)
 
-        # Проверяем, успешен ли запрос
+        # Check if the response is successful
         if response.status_code == 200:
-            film_data = response.json()  # Преобразуем ответ в JSON
+            film_data = response.json()  # Parse the JSON response
             films = film_data.get("films", [])
             return films[0] if films else None
         else:
-            logger.error(f"response err: {response.status_code} - {response.text}")
+            logger.error(f"search_film response error: {response.status_code} - {response.text}")
             return None
     except Exception as e:
-        # print(f'Произошла ошибка: {e}')
-        st.error("search_film error", icon="🚨")
-        logger.error(f"Ошибка search_film: {e}")
+        st.error("Kinopoisk search issue", icon="🚨")
+        logger.error(f"search_film error: {e}")
 
 
 def data_preparation(raw_data) -> dict:
@@ -143,12 +142,12 @@ def data_preparation(raw_data) -> dict:
         return None
 
 
-# Сохранение данных в БД рекомендаций
+# Saving data in "offered movies" table in DB
 def offer_film(new_mov):
-    """Ищет информацию о произведении и добавляет в БД "Рекомендованные фильмы"
+    """Searches for information about a film and adds it to the "offered movies" table in the database
 
     Args:
-        new_mov (str): название произведения
+        new_mov (str): The name of the film to offer
     """
     try:
         st_supabase_client = init_supabase_client()
@@ -176,10 +175,10 @@ def offer_film(new_mov):
         logger.success(f"Добавлено только название {new_mov}")
 
     except Exception as e:
-        # Приводим сообщение к нижнему регистру для универсальности
+        # Convert the message to lowercase for consistency
         error_msg = str(e).lower()
 
-        # Проверяем наличие кода ошибки 23505 или ключевых слов
+        # Check for specific error codes or messages related to duplicate entries
         if "23505" in error_msg or "duplicate key" in error_msg:
             logger.warning(f"Попытка добавить дубликат: {new_mov}")
         else:
@@ -187,14 +186,14 @@ def offer_film(new_mov):
             logger.error(f"offer_film error: {e}")
 
 
-# Флаг: была ли отправлена форма
+# Movie form function
 def movie_form():
     submitted = st.session_state.get("submitted", False)
 
-    # Если не отправлена форма, то создаем форму
+    # If the form has not been submitted, display the input form for suggesting a movie
     if not submitted:
         with st.form("add_movie_form"):
-            # Ввод фильма
+            # Input field for the movie name
             mov = st.text_input(
                 "Название фильма",
                 label_visibility="collapsed",
@@ -206,9 +205,9 @@ def movie_form():
                 use_container_width=True,
                 type="secondary",
             )
-            # .strip() возвращает слово без пробелов в начале и конце
+            # .strip() is used to remove any leading or trailing whitespace from the movie name
             if send and mov.lower().strip():
-                # state того что отправили
+                # state is used to track the submission status and any inappropriate words
                 st.session_state["submitted"] = True
                 if mov.lower() in ["хуй", "пенис", "пизда"]:
                     st.session_state["bad_word"] = mov
@@ -233,15 +232,14 @@ def movie_form():
 
 def process_movie(movie_name: str):
     """
-    Полная обработка фильма: поиск + подготовка
+    Movie processing: search + formatting
 
     Args:
-        name: Название фильма
+        name: Name of the movie
 
     Returns:
-        Готовые данные для БД или None
+        Prepared data for the database or None
     """
-    # from scripts.scripts_movies import data_preparation, search_film
 
     raw_data = search_film(movie_name)
 
@@ -249,7 +247,8 @@ def process_movie(movie_name: str):
         mov_data = data_preparation(raw_data)
 
         if mov_data is not None:
-            del mov_data["url"]  # Убираем колонку url
+            del mov_data["url"]  # Remove the 'url' key as it's not needed for database insertion
 
         return mov_data
+
     return None
