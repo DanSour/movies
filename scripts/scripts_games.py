@@ -36,14 +36,14 @@ def process_game(game_name: str) -> dict:
         Prepared data for DB or None
     """
     try:
-        game_name = game_name.lower().strip()
         if game_name.isdigit():
-            results = HowLongToBeat().search_from_id(int(game_name))  # for search by ID
+            game_data = HowLongToBeat().search_from_id(int(game_name))
+            game_vars = vars(game_data)
         else:
-            results = HowLongToBeat().search(game_name)  # for search by game_name
-        if results is not None and len(results) > 0:
-            game = results[0]
-            game_vars = vars(game)
+            results = HowLongToBeat(0.0).search(game_name, similarity_case_sensitive=False)  # for search by game_name
+            if len(results) > 0:
+                game = results[0]
+                game_vars = vars(game)
 
             keys_to_keep = [
                 "game_name",
