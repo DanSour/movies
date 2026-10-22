@@ -65,6 +65,44 @@ def get_movie_type(movie_vars):
         return "Неизвестный тип"
 
 
+def search_by_id(film_name) -> dict:
+    """Searches for information about a film using its ID with the Kinopoisk API.
+
+    Args:
+        film_name (str): The ID of the film to search for.
+
+    Returns:
+        dict: Dictionary with information about the film.
+    """
+    url = f"https://kinopoiskapiunofficial.tech/api/v2.2/films/{film_name}"
+
+    # Headers for the API request
+    headers = {
+        "X-API-KEY": st.secrets["API_KEY"],
+        "Content-Type": "application/json",
+    }
+
+    try:
+        response = requests.get(url, headers=headers, timeout=4)
+
+        # Check if the response is successful
+        if response.status_code == 200:
+
+            film_data = response.json()  # Parse the JSON response
+
+            if film_data["filmLength"] is not None:
+                film_length = int(film_data["filmLength"])
+                film_data["filmLength"] = f"{film_length // 60:02d}:{film_length % 60:02d}"
+
+            return film_data
+        else:
+            logger.error(f"search_by_id response error: {response.status_code} - {response.text}")
+            return None
+    except Exception as e:
+        st.error("Kinopoisk id search issue", icon="🚨")
+        logger.error(f"search_by_id error: {e}")
+
+
 def search_film(film_name) -> dict:
     """Searches for information about a film using the Kinopoisk API.
 
@@ -74,6 +112,10 @@ def search_film(film_name) -> dict:
     Returns:
         dict: Dictionary with information about the film.
     """
+    if (film_name.isdigit()):
+        film_data = search_by_id(film_name)
+        return film_data
+
     url = "https://kinopoiskapiunofficial.tech/api/v2.1/films/search-by-keyword"
 
     # Headers for the API request
@@ -131,7 +173,7 @@ def data_preparation(raw_data) -> dict:
         mov_vars["genres"] = ", ".join([item["genre"] for item in mov_vars["genres"]])
 
         mov_vars["rating"] = (
-            0.0 if mov_vars["rating"] == "null" else float(mov_vars["rating"])
+            0.0 if mov_vars["rating"] in ["null", None, ""] else float(mov_vars["rating"])
         )
         mov_vars["type"] = get_movie_type(mov_vars)
 
